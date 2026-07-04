@@ -14,6 +14,8 @@ F1 팬용 일정·순위 웹앱 (MVP: F-01~F-05)
 GitHub Pages로 배포: Settings → Pages → Source를 `main` / `(root)`로 설정하면
 `index.html`이 자동으로 루트에서 서빙됩니다.
 
+배포 URL: https://shan0873.github.io/Pit-Wall/
+
 ## 로드맵
 
 굿즈 구매대행, 커뮤니티 게시판/실시간 채팅 등은 다음 버전(P2)에서 다룰 예정입니다.
