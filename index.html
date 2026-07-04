@@ -267,34 +267,71 @@ async function enableNotifications(){
     : "이미 알림 시점이 지났습니다.");
 }
 
+function computeRaceGroups(raceList, now){
+  const groups = { live: [], upcoming: [], completed: [] };
+  raceList.forEach(r => {
+    const sessions = allSessions.filter(s => s.round === r.round);
+    const weekendStart = sessions.reduce((min, s) => s.dt < min ? s.dt : min, sessions[0].dt);
+    const raceDt = toKST(r.date, r.time);
+    if(now < weekendStart) groups.upcoming.push(r);
+    else if(now <= raceDt) groups.live.push(r);
+    else groups.completed.push(r);
+  });
+  return groups;
+}
+
+function raceRowHTML(r, nextRound){
+  const raceDt = toKST(r.date, r.time);
+  const isNext = r.round === nextRound;
+  const sessRows = allSessions.filter(s => s.round === r.round)
+    .map(s => `<tr><td>${s.name}</td><td>${fmtKST(s.dt)}</td></tr>`).join("");
+  return `
+    <tr class="${isNext ? 'next-race' : ''}">
+      <td class="pos">${r.round}</td>
+      <td>
+        ${r.raceName}${isNext ? ' <span class="badge">NEXT</span>' : ''}
+        <div class="muted">${r.Circuit.circuitName}, ${r.Circuit.Location.country}</div>
+        <details><summary>세션별 KST 시간 보기</summary>
+          <table class="sess-table"><tbody>${sessRows}</tbody></table>
+        </details>
+      </td>
+      <td class="muted" style="white-space:nowrap;">${fmtKSTShort(raceDt)}</td>
+    </tr>`;
+}
+
+function raceTableHTML(list, nextRound){
+  return `
+    <table>
+      <thead><tr><th>R</th><th>그랑프리</th><th>레이스(KST)</th></tr></thead>
+      <tbody>${list.map(r => raceRowHTML(r, nextRound)).join("")}</tbody>
+    </table>`;
+}
+
 function renderSchedule(now){
   const el = document.getElementById("schedule-body");
   const nextRound = nextSession ? nextSession.round : null;
-  let rows = races.map(r => {
-    const raceDt = toKST(r.date, r.time);
-    const isNext = r.round === nextRound;
-    const isPast = raceDt < now;
-    const sessRows = allSessions.filter(s => s.round === r.round)
-      .map(s => `<tr><td>${s.name}</td><td>${fmtKST(s.dt)}</td></tr>`).join("");
-    return `
-      <tr class="${isNext ? 'next-race' : ''}">
-        <td class="pos">${r.round}</td>
-        <td>
-          ${r.raceName}${isNext ? ' <span class="badge">NEXT</span>' : ''}
-          <div class="muted">${r.Circuit.circuitName}, ${r.Circuit.Location.country}</div>
-          <details><summary>세션별 KST 시간 보기</summary>
-            <table class="sess-table"><tbody>${sessRows}</tbody></table>
-          </details>
-        </td>
-        <td class="muted" style="white-space:nowrap;">${fmtKSTShort(raceDt)}</td>
-        <td class="muted">${isPast ? '완료' : '예정'}</td>
-      </tr>`;
-  }).join("");
-  el.innerHTML = `
-    <table>
-      <thead><tr><th>R</th><th>그랑프리</th><th>레이스(KST)</th><th>상태</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>`;
+  const { live, upcoming, completed } = computeRaceGroups(races, now);
+
+  let html = "";
+
+  if(live.length){
+    html += `<h3 class="group-title">진행중</h3>${raceTableHTML(live, nextRound)}`;
+  }
+
+  html += `<h3 class="group-title">예정</h3>`;
+  html += upcoming.length
+    ? raceTableHTML(upcoming, nextRound)
+    : `<div class="muted">예정된 그랑프리가 없습니다 (시즌 종료).</div>`;
+
+  if(completed.length){
+    html += `
+      <details class="completed-group">
+        <summary>완료된 그랑프리 (${completed.length})</summary>
+        ${raceTableHTML(completed, nextRound)}
+      </details>`;
+  }
+
+  el.innerHTML = html;
 }
 
 async function loadStandings(){
