@@ -1,4 +1,5 @@
-import { signInWithGoogle, signInWithKakao } from './auth.js';
+import { signInWithGoogle, signInWithKakao, getSession } from './auth.js';
+import { App } from '@capacitor/app';
 
 export function renderLoginView(container) {
   container.innerHTML = `
@@ -32,6 +33,19 @@ export function renderLoginView(container) {
       setLoading(false);
     }
   }
+
+  let resumeListenerHandle = null;
+  App.addListener('appStateChange', async ({ isActive }) => {
+    if (!isActive) return;
+    const session = await getSession();
+    if (!session) {
+      setLoading(false);
+    } else if (resumeListenerHandle) {
+      resumeListenerHandle.remove();
+    }
+  }).then((handle) => {
+    resumeListenerHandle = handle;
+  });
 
   googleBtn.addEventListener('click', () => handleLogin(signInWithGoogle));
   kakaoBtn.addEventListener('click', () => handleLogin(signInWithKakao));
