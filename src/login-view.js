@@ -1,5 +1,6 @@
 import { signInWithGoogle, signInWithKakao, getSession } from './auth.js';
 import { App } from '@capacitor/app';
+import { Browser } from '@capacitor/browser';
 
 export function renderLoginView(container) {
   container.innerHTML = `
@@ -35,8 +36,12 @@ export function renderLoginView(container) {
   }
 
   let resumeListenerHandle = null;
-  App.addListener('appStateChange', async ({ isActive }) => {
-    if (!isActive) return;
+  let browserFinishedListenerHandle = null;
+
+  // Shared by both listeners below: check whether login actually completed,
+  // and if not, re-enable the buttons. If it did complete, tear down both
+  // listeners since they're no longer needed.
+  async function reenableIfNoSession() {
     let session = null;
     try {
       session = await getSession();
@@ -45,11 +50,30 @@ export function renderLoginView(container) {
     }
     if (!session) {
       setLoading(false);
-    } else if (resumeListenerHandle) {
-      resumeListenerHandle.remove();
+    } else {
+      if (resumeListenerHandle) resumeListenerHandle.remove();
+      if (browserFinishedListenerHandle) browserFinishedListenerHandle.remove();
     }
+  }
+
+  App.addListener('appStateChange', async ({ isActive }) => {
+    if (!isActive) return;
+    await reenableIfNoSession();
   }).then((handle) => {
     resumeListenerHandle = handle;
+  });
+
+  // On iOS, Browser.open() presents the OAuth flow as an in-app modal sheet
+  // (SFSafariViewController) rather than backgrounding the app, so
+  // App's appStateChange never fires when the user cancels/backs out of it.
+  // @capacitor/browser's browserFinished event fires reliably on both
+  // platforms whenever the in-app browser sheet closes (user cancellation,
+  // or our own Browser.close() call on successful login), so it's the
+  // signal that actually works on iOS.
+  Browser.addListener('browserFinished', async () => {
+    await reenableIfNoSession();
+  }).then((handle) => {
+    browserFinishedListenerHandle = handle;
   });
 
   googleBtn.addEventListener('click', () => handleLogin(signInWithGoogle));
