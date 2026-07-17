@@ -2,3 +2,5 @@ github_token.txt
 .DS_Store
 node_modules/
 .worktrees/
+dist/
+.env.local
