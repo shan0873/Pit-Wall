@@ -58,7 +58,13 @@ function showApp() {
 async function boot() {
   initDeepLinkListener();
 
-  const session = await getSession();
+  let session = null;
+  try {
+    session = await getSession();
+  } catch (err) {
+    console.error(err);
+  }
+
   if (session) {
     showApp();
   } else {
@@ -68,6 +74,8 @@ async function boot() {
   onAuthStateChange((event, session) => {
     if (event === 'SIGNED_IN' && session && !appInitialized) {
       showApp();
+    } else if (event === 'SIGNED_OUT') {
+      window.location.reload();
     }
   });
 }

@@ -37,7 +37,12 @@ export function renderLoginView(container) {
   let resumeListenerHandle = null;
   App.addListener('appStateChange', async ({ isActive }) => {
     if (!isActive) return;
-    const session = await getSession();
+    let session = null;
+    try {
+      session = await getSession();
+    } catch (err) {
+      console.error(err);
+    }
     if (!session) {
       setLoading(false);
     } else if (resumeListenerHandle) {

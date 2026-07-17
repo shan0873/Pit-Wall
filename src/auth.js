@@ -6,7 +6,8 @@ const REDIRECT_URL = 'pitwall://auth-callback';
 
 export const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
+  import.meta.env.VITE_SUPABASE_ANON_KEY,
+  { auth: { flowType: 'implicit' } }
 );
 
 export async function getSession() {
@@ -50,16 +51,20 @@ export function initDeepLinkListener() {
   App.addListener('appUrlOpen', async ({ url }) => {
     if (!url.includes('auth-callback')) return;
 
-    await Browser.close();
+    try {
+      await Browser.close();
 
-    const hashIndex = url.indexOf('#');
-    if (hashIndex === -1) return;
-    const params = new URLSearchParams(url.slice(hashIndex + 1));
-    const access_token = params.get('access_token');
-    const refresh_token = params.get('refresh_token');
+      const hashIndex = url.indexOf('#');
+      if (hashIndex === -1) return;
+      const params = new URLSearchParams(url.slice(hashIndex + 1));
+      const access_token = params.get('access_token');
+      const refresh_token = params.get('refresh_token');
 
-    if (access_token && refresh_token) {
-      await supabase.auth.setSession({ access_token, refresh_token });
+      if (access_token && refresh_token) {
+        await supabase.auth.setSession({ access_token, refresh_token });
+      }
+    } catch (err) {
+      console.error(err);
     }
   });
 }
