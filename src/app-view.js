@@ -1,12 +1,14 @@
 export function initApp(onLogout) {
-  const headerEl = document.querySelector('header');
-  const logoutBtn = document.createElement('button');
-  logoutBtn.textContent = '로그아웃';
-  logoutBtn.className = 'secondary';
-  logoutBtn.style.cssText = 'position:absolute; top:20px; right:16px; padding:6px 12px; font-size:12px;';
-  logoutBtn.onclick = onLogout;
-  headerEl.style.position = 'relative';
-  headerEl.appendChild(logoutBtn);
+  if (onLogout) {
+    const headerEl = document.querySelector('header');
+    const logoutBtn = document.createElement('button');
+    logoutBtn.textContent = '로그아웃';
+    logoutBtn.className = 'secondary';
+    logoutBtn.style.cssText = 'position:absolute; top:20px; right:16px; padding:6px 12px; font-size:12px;';
+    logoutBtn.onclick = onLogout;
+    headerEl.style.position = 'relative';
+    headerEl.appendChild(logoutBtn);
+  }
 
 const API = "https://api.jolpi.ca/ergast/f1";
 

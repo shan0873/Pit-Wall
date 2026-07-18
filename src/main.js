@@ -1,7 +1,8 @@
 import './style.css';
+import { Capacitor } from '@capacitor/core';
 import { initApp } from './app-view.js';
 import { renderLoginView } from './login-view.js';
-import { getSession, onAuthStateChange, signOut, initDeepLinkListener } from './auth.js';
+import { getSession, onAuthStateChange, signOut, initDeepLinkListener, supabase } from './auth.js';
 
 const root = document.body;
 let appInitialized = false;
@@ -13,7 +14,7 @@ function showLogin() {
   renderLoginView(container);
 }
 
-function showApp() {
+function showApp(isGuest = false) {
   if (appInitialized) return;
   appInitialized = true;
   root.innerHTML = `
@@ -44,7 +45,8 @@ function showApp() {
       </footer>
     </div>
   `;
-  initApp(async () => {
+  // Guest mode (web browsers) has no session, so no logout button — pass null.
+  const onLogout = isGuest ? null : async () => {
     // Full page reload (not an in-place DOM swap back to the login view) is
     // intentional: app-view.js's initApp() starts a setInterval and DOM
     // listeners with no teardown mechanism. Reloading guarantees every
@@ -52,10 +54,31 @@ function showApp() {
     // instead of requiring cleanup code here.
     await signOut();
     window.location.reload();
-  });
+  };
+  initApp(onLogout);
+}
+
+async function trackVisit() {
+  try {
+    const source = new URLSearchParams(window.location.search).get('src') || 'direct';
+    // Best-effort analytics: a failed insert (e.g. table missing) resolves
+    // with { error } and is intentionally ignored. try/catch only guards
+    // against unexpected synchronous/network-level throws.
+    await supabase.from('page_views').insert({ source, platform: 'web' });
+  } catch (_) {
+    // analytics must never break the app
+  }
 }
 
 async function boot() {
+  if (!Capacitor.isNativePlatform()) {
+    // Web browser: guest mode — no login gate. Fire-and-forget visit tracking,
+    // then straight to the app. None of the auth flow below applies.
+    trackVisit();
+    showApp(true);
+    return;
+  }
+
   initDeepLinkListener();
 
   let session = null;
