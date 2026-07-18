@@ -26,15 +26,19 @@ jobs:
         with:
           node-version: 20
       - run: npm ci
-      - run: npm run build
+      # Supabase anon key는 배포되는 JS 번들에 그대로 노출되는 공개 설계 값(보안 경계는 RLS)이므로
+      # 워크플로우에 기본값으로 두어도 추가 노출이 없다. 저장소 Variables/Secrets가 있으면 그 값을 우선한다.
+      - run: |
+          export VITE_SUPABASE_URL="${VITE_SUPABASE_URL:-https://xjryroyfxpasuxumtbnf.supabase.co}"
+          export VITE_SUPABASE_ANON_KEY="${VITE_SUPABASE_ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhqcnlyb3lmeHBhc3V4dW10Ym5mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyNjE3NDIsImV4cCI6MjA5OTgzNzc0Mn0.8935jxCu5YdTiWMeax9MpA-F_GClpldSPO1LN3RRKsw}"
+          npm run build
         env:
-          # Variables 탭과 Secrets 탭 어디에 등록돼 있어도 동작하도록 둘 다 조회
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY || secrets.VITE_SUPABASE_ANON_KEY }}
-      # 환경변수 누락 시 빈 화면으로 배포되는 사고를 빌드 단계에서 차단
+      # 프로젝트 ref가 번들에 실제로 포함됐는지 검사 (라이브러리 내 supabase.co 문자열에 속지 않도록 정확한 값 확인)
       - run: |
-          if ! grep -rq "supabase.co" dist/assets/*.js; then
-            echo "::error::VITE_SUPABASE_URL이 빌드에 포함되지 않았습니다. 저장소 Settings → Secrets and variables → Actions에서 VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY 등록을 확인하세요."
+          if ! grep -rq "xjryroyfxpasuxumtbnf" dist/assets/*.js; then
+            echo "::error::Supabase URL이 빌드에 포함되지 않았습니다. 워크플로우 env 설정을 확인하세요."
             exit 1
           fi
       - uses: actions/configure-pages@v5
