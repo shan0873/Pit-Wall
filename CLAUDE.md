@@ -2,6 +2,9 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> **세션 시작 시 필독:** `docs/STATUS.md`를 먼저 읽고 현재 상태·미해결 항목·다음 할 일을 파악할 것.
+> **세션을 마칠 때는 `docs/STATUS.md`의 "현재 상태"와 "작업 이력"을 반드시 업데이트할 것.** 이 규칙은 디바이스에 상관없이 항상 적용된다 (이 파일은 저장소에 커밋되어 모든 클론에 따라간다).
+
 ## 프로젝트 개요
 
 Pit-Wall은 F1 팬용 일정·순위 앱이다. 시즌 일정을 한국시간(KST)으로 표시하고, 다음 세션 카운트다운·드라이버/컨스트럭터 순위를 제공한다. 웹(GitHub Pages)과 iOS/Android 앱(Capacitor)이 **같은 코드베이스**에서 나온다. 앱 진입 시 구글/카카오 소셜 로그인이 필수다(Supabase Auth).
