@@ -28,8 +28,15 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
-          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+          # Variables 탭과 Secrets 탭 어디에 등록돼 있어도 동작하도록 둘 다 조회
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY || secrets.VITE_SUPABASE_ANON_KEY }}
+      # 환경변수 누락 시 빈 화면으로 배포되는 사고를 빌드 단계에서 차단
+      - run: |
+          if ! grep -rq "supabase.co" dist/assets/*.js; then
+            echo "::error::VITE_SUPABASE_URL이 빌드에 포함되지 않았습니다. 저장소 Settings → Secrets and variables → Actions에서 VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY 등록을 확인하세요."
+            exit 1
+          fi
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
